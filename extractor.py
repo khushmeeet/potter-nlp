@@ -21,6 +21,7 @@ def write_data(text, file_name):
 def clean_data(text):
     ctext = re.sub(r'/', ' ', text)
     dtext = re.sub(r'P( )?a( )?g( )?e( )?\|( )?[0-9a-zA-Z]+( )?(\n)*Harry Potter [a-zA-Z ]+( )?-( )?J.K. Rowling', ' ', ctext)
+    dtext = dtext.replace('\n',' ')
     return dtext
 
 
