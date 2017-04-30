@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import os
 import re
+import string
 
 
 data = os.listdir('data/')
@@ -23,6 +24,7 @@ def clean_data(text):
     ctext = re.sub(r'P( )?a( )?g( )?e( )?\|( )?[0-9a-zA-Z]+( )?(\n)*Harry Potter [a-zA-Z ]+( )?-( )?J.K. Rowling', ' ', ctext)
     ctext = ctext.replace('\n',' ')
     ctext = ctext.lower()
+    ctext = ' '.join(word.strip(string.punctuation) for word in ctext.split())
     return ctext
 
 
