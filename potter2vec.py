@@ -3,6 +3,9 @@ import tensorflow as tf
 import numpy as np
 import helper
 import random
+import os
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
 
 
 corpus = helper.load_books()
@@ -50,48 +53,60 @@ similarity = tf.matmul(valid_embedding, tf.transpose(normalized_embedding))
 
 saver = tf.train.Saver()
 
-epochs = 10
+epochs = 25
 batch_size = 500
 window_size = 10
+viz_words = 500
 
-with tf.Session() as sess:
-    iteration = 1
-    loss = 0
-    sess.run(tf.global_variables_initializer())
+if os.path.exists('checkpoints/potter2vec.ckpt'):
+    with tf.Session as sess:
+        saver.restore(sess, tf.train.latest_checkpoint('checkpoints'))
+        embed_mat = sess.run(embedding)
+        tsne = TSNE()
+        embed_tsne = tsne.fit_transform(embed_mat[:viz_words, :])
+        fig, ax = plt.subplots(figsize=(14, 14))
+        for idx in range(viz_words):
+            plt.scatter(*embed_tsne[idx, :], color='steelblue')
+            plt.annotate(int_to_vocab[idx], (embed_tsne[idx, 0], embed_tsne[idx, 1]), alpha=0.7)
+else:
+    with tf.Session() as sess:
+        iteration = 1
+        loss = 0
+        sess.run(tf.global_variables_initializer())
 
-    for e in range(1, epochs + 1):
-        batches = helper.get_batches(sampled_encoded_corpus, batch_size, window_size)
-        start = time.time()
-        for x, y in batches:
+        for e in range(1, epochs + 1):
+            batches = helper.get_batches(sampled_encoded_corpus, batch_size, window_size)
+            start = time.time()
+            for x, y in batches:
 
-            feed = {inputs: x,
-                    targets: np.array(y)[:, None]}
-            train_loss, _ = sess.run([cost, optimizer], feed_dict=feed)
+                feed = {inputs: x,
+                        targets: np.array(y)[:, None]}
+                train_loss, _ = sess.run([cost, optimizer], feed_dict=feed)
 
-            loss += train_loss
+                loss += train_loss
 
-            if iteration % 100 == 0:
-                end = time.time()
-                print("Epoch {}/{}".format(e, epochs),
-                      "Iteration: {}".format(iteration),
-                      "Avg. Training loss: {:.4f}".format(loss / 100),
-                      "{:.4f} sec/batch".format((end - start) / 100))
-                loss = 0
-                start = time.time()
+                if iteration % 100 == 0:
+                    end = time.time()
+                    print("Epoch {}/{}".format(e, epochs),
+                          "Iteration: {}".format(iteration),
+                          "Avg. Training loss: {:.4f}".format(loss / 100),
+                          "{:.4f} sec/batch".format((end - start) / 100))
+                    loss = 0
+                    start = time.time()
 
-            if iteration % 500 == 0:
-                # note that this is expensive (~20% slowdown if computed every 500 steps)
-                sim = similarity.eval()
-                for i in range(valid_size):
-                    valid_word = int_to_vocab[valid_examples[i]]
-                    top_k = 8  # number of nearest neighbors
-                    nearest = (-sim[i, :]).argsort()[1:top_k + 1]
-                    log = 'Nearest to %s:' % valid_word
-                    for k in range(top_k):
-                        close_word = int_to_vocab[nearest[k]]
-                        log = '%s %s,' % (log, close_word)
-                    print(log)
+                if iteration % 500 == 0:
+                    # note that this is expensive (~20% slowdown if computed every 500 steps)
+                    sim = similarity.eval()
+                    for i in range(valid_size):
+                        valid_word = int_to_vocab[valid_examples[i]]
+                        top_k = 8  # number of nearest neighbors
+                        nearest = (-sim[i, :]).argsort()[1:top_k + 1]
+                        log = 'Nearest to %s:' % valid_word
+                        for k in range(top_k):
+                            close_word = int_to_vocab[nearest[k]]
+                            log = '%s %s,' % (log, close_word)
+                        print(log)
 
-            iteration += 1
-    save_path = saver.save(sess, "checkpoints/potter2vec.ckpt")
-    embed_mat = sess.run(normalized_embedding)
+                iteration += 1
+        save_path = saver.save(sess, "checkpoints/potter2vec.ckpt")
+        embed_mat = sess.run(normalized_embedding)
