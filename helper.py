@@ -79,3 +79,23 @@ def get_batches(words, batch_size, window_size=5):
             y.extend(batch_y)
             x.extend([batch_x] * len(batch_y))
         yield x, y
+
+
+# def get_batches(int_text, batch_size, seq_length):
+#     """
+#     Return batches of input and target
+#     :param int_text: Text with the words replaced by their ids
+#     :param batch_size: The size of batch
+#     :param seq_length: The length of sequence
+#     :return: A list where each item is a tuple of (batch of input, batch of target).
+#     """
+#     n_batches = int(len(int_text) / (batch_size * seq_length))
+#
+#     # Drop the last few characters to make only full batches
+#     xdata = np.array(int_text[: n_batches * batch_size * seq_length])
+#     ydata = np.array(int_text[1: n_batches * batch_size * seq_length + 1])
+#
+#     x_batches = np.split(xdata.reshape(batch_size, -1), n_batches, 1)
+#     y_batches = np.split(ydata.reshape(batch_size, -1), n_batches, 1)
+#
+#     return list(zip(x_batches, y_batches))
